@@ -1,8 +1,8 @@
-import java.io.*;
+
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class NFA_State implements Serializable {
+public class NFA_State {
 
 
     private HashMap<Character, HashSet<NFA_State>  > transitions ;
