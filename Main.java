@@ -5,15 +5,27 @@ import java.util.Map;
 
 public class Main {
 
-    HashMap < String , NFA > reg_exp ;
+    static HashMap < String , NFA > reg_exp ;
 
     HashMap< String , NFA > reg_def ;
 
     HashMap < String , Integer > priorities ;
 
+    HashMap < NFA_State,String > acceptence ;
 
     public static void main(String[] args)  {
-
+        Main m=new Main();
+        NFA a=m.convert_to_NFA('a');
+        NFA b=m.convert_to_NFA('b');
+        NFA aORb=m.or_NFA(a,b);
+        NFA cloned=m.deepClone(aORb);
+        NFA kleene=m.kleene_closure(a);
+        NFA and=m.AND_NFA(a,kleene);
+        reg_exp=new HashMap<>();
+        reg_exp.put("a",a);
+        reg_exp.put("b",b);
+        reg_exp.put("aorb",aORb);
+        NFA combined=m.combine_NFA();
     }
 
     public void parse_file(){
@@ -22,9 +34,23 @@ public class Main {
 
 
 
-    public void convert_to_NFA ( char s ){
+    public NFA convert_to_NFA ( Character s ){
 
+        NFA_State start=new NFA_State();
+        NFA_State end=new NFA_State();
 
+        if (s==null)
+            start.getEmpty_transitions().add(end);
+        else
+            start.insert_transition(s,end);
+
+        NFA res=new NFA();
+
+        res.add_accepting_state(end);
+        res.getStates().add(end);
+        res.getStates().add(start);
+        res.setStart_state(start);
+        return res;
     }
 
     public void convert_to_DFA ( NFA nfa ){
@@ -58,17 +84,17 @@ public class Main {
         NFA_State old_final= accept.iterator().next();
         HashSet<NFA_State> states=res.getStates();
 
-        new_start.insert_transition('^',old_start);
-        old_final.insert_transition('^',old_start);
-        old_final.insert_transition('^',new_final);
-        new_start.insert_transition('^',new_final);
+        new_start.getEmpty_transitions().add(old_start);
+        old_final.getEmpty_transitions().add(old_start);
+        old_final.getEmpty_transitions().add(new_final);
+        new_start.getEmpty_transitions().add(new_final);
 
         res.setStart_state(new_start);
         accept.remove(old_final);
         accept.add(new_final);
         res.setAccepting_states(accept);
-        states.add(new_final);
         states.add(new_start);
+        states.add(new_final);
 
         return  res;
     }
@@ -85,26 +111,27 @@ public class Main {
          * */
         NFA clone_nfa1= deepClone(nfa1);
         NFA clone_nfa2=deepClone(nfa2);
+
         NFA_State new_start=new NFA_State();
         NFA_State new_final=new NFA_State();
+
         NFA_State old_start1=clone_nfa1.getStart_state();
         NFA_State old_final1=clone_nfa1.getAccepting_states().iterator().next();
         NFA_State old_start2=clone_nfa2.getStart_state();
         NFA_State old_final2=clone_nfa2.getAccepting_states().iterator().next();
 
-        new_start.insert_transition('^',old_start1);
-        new_start.insert_transition('^',old_start2);
-        old_final1.insert_transition('^',new_final);
-        old_final2.insert_transition('^',new_final);
+        new_start.getEmpty_transitions().add(old_start1);
+        new_start.getEmpty_transitions().add(old_start2);
+        old_final1.getEmpty_transitions().add(new_final);
+        old_final2.getEmpty_transitions().add(new_final);
 
         NFA res_nfa=new NFA(new_start);
         HashSet<NFA_State> res_states=res_nfa.getStates();
         res_states.add(new_start);
-        /*ana msh 3rfa elfunction addAll deh mwgoda fl cpp wla la bs lw msv mwgoda yb2a nbdlha b loop */
         res_states.addAll(clone_nfa1.getStates());
         res_states.addAll(clone_nfa2.getStates());
         res_states.add(new_final);
-        res_nfa.getAccepting_states().add(new_final);
+        res_nfa.add_accepting_state(new_final);
 
         return res_nfa;
     }
@@ -120,19 +147,41 @@ public class Main {
          * */
         NFA clone_nfa1= deepClone(nfa1);
         NFA clone_nfa2=deepClone(nfa2);
+
         NFA_State start2=clone_nfa2.getStart_state();
         NFA_State final1=clone_nfa1.getAccepting_states().iterator().next();
 
         clone_nfa1.getAccepting_states().remove(final1);
+        final1.setTransitions(start2.getTransitions());
+        final1.setEmpty_transitions(start2.getEmpty_transitions());
         clone_nfa2.getStates().remove(clone_nfa2.getStart_state());
         clone_nfa1.getStates().addAll(clone_nfa2.getStates());
         clone_nfa1.getAccepting_states().addAll(clone_nfa2.getAccepting_states());
-        final1.setTransitions(start2.getTransitions());
 
         return clone_nfa1;
     }
 
+    public NFA combine_NFA(){
+        NFA_State start =new NFA_State();
+        NFA combined=new NFA(start);
+    acceptence=new HashMap<>();
+        for (String st:reg_exp.keySet()){
+            NFA nfa=reg_exp.get(st);
+            NFA_State nfa_start=nfa.getStart_state();
+            start.getEmpty_transitions().add(nfa_start);
+            combined.add_accepting_state(nfa.getAccepting_states().iterator().next());
+            combined.getStates().addAll(nfa.getStates());
+            NFA_State n=nfa.getAccepting_states().iterator().next();
+            acceptence.put(n,st);
+        }
+        combined.getStates().add(start);
+        return combined;
+    }
 
+    public NFA positive_closure(NFA nfa){
+        NFA cloned=deepClone(nfa);
+        return AND_NFA(cloned,kleene_closure(cloned));
+    }
 
     private NFA deepClone(NFA nfa)
     {
@@ -142,14 +191,14 @@ public class Main {
         cloned.getStates().addAll(created.values());
         for (NFA_State nfa_state:nfa.getAccepting_states())
         {
-          cloned.getAccepting_states().add(created.get(nfa_state));
+          cloned.add_accepting_state(created.get(nfa_state));
         }
         return cloned;
      }
 
     private NFA_State dfs(NFA_State start_state, Map<NFA_State,NFA_State> created)
     {
-        if (start_state==null)return start_state;
+        if (start_state==null)return null;
 
 
         if(created.containsKey(start_state)) {
@@ -159,9 +208,10 @@ public class Main {
         created.put(start_state, currentNfa);
         for(Character c:start_state.getTransitions().keySet()) {
             for (NFA_State n:start_state.getTransitions().get(c)){
-            currentNfa.insert_transition(c,dfs(n,created));}
-        }
-
+                currentNfa.insert_transition(c,dfs(n,created));}
+    }
+        for (NFA_State n:start_state.getEmpty_transitions()){
+            currentNfa.getEmpty_transitions().add(dfs(n,created));}
         return currentNfa;
     }
 }
