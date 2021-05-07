@@ -1,4 +1,5 @@
 
+
 import java.util.HashSet;
 
 public class NFA  {
@@ -7,6 +8,8 @@ public class NFA  {
 
     private HashSet<NFA_State> accepting_states;
 
+
+
     private HashSet<NFA_State> states;
 
     public NFA(NFA_State start_state) {
@@ -14,12 +17,17 @@ public class NFA  {
         accepting_states = new HashSet<>();
         states = new HashSet<>();
     }
-    
+
+    public NFA() {
+        accepting_states = new HashSet<>();
+        states = new HashSet<>();
+    }
+    public void add_accepting_state(NFA_State end){
+        accepting_states.add(end);
+    }
     public HashSet<NFA_State> getStates() {
         return states;
     }
-
-
 
     public NFA_State getStart_state() {
         return start_state;
