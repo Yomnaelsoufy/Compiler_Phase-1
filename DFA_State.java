@@ -4,7 +4,11 @@ public class DFA_State {
 
     private HashMap<Character,DFA_State> transitions ;
 
-    public DFA_State(HashMap<Character, DFA_State> transitions) {
+    public HashMap<Character, DFA_State> getTransitions() {
+        return transitions;
+    }
+
+    public DFA_State() {
         transitions = new HashMap<>();
     }
 
