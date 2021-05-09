@@ -1,15 +1,9 @@
-
-
 import java.util.HashSet;
 
 public class NFA  {
 
     private NFA_State start_state;
-
     private HashSet<NFA_State> accepting_states;
-
-
-
     private HashSet<NFA_State> states;
 
     public NFA(NFA_State start_state) {
@@ -43,6 +37,10 @@ public class NFA  {
 
     public void setAccepting_states(HashSet<NFA_State> accepting_states) {
         this.accepting_states = accepting_states;
+    }
+
+    public boolean is_Accepting_State ( NFA_State s ){
+        return accepting_states.contains(s);
     }
 
 }
